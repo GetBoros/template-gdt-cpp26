@@ -3,7 +3,6 @@ extends Label
 #------------------------------------------------------------------------------------------------------------
 func _ready() -> void:
 	# _ready() — это аналог BeginPlay() в Unreal Engine
-	
 	# Создаем твин (интерполятор)
 	var tween: Tween = create_tween()
 	
@@ -19,3 +18,6 @@ func _ready() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	pass
+
+# Lounch Godot Editor godot -e
+# Lounch Godot godot --print-fps  // show fps in console
