@@ -3,32 +3,33 @@ extends Node
 #------------------------------------------------------------------------------------------------------------
 const MAIN_MENU_SCENE: PackedScene = preload("res://ui/main_menu/MainMenu.tscn")
 const LEVEL_TEST_SCENE: PackedScene = preload("res://gameplay/Level_Test.tscn")
-
+#------------------------------------------------------------------------------------------------------------
 @onready var _world: Node2D = $World
 @onready var _ui: CanvasLayer = $UI
 #------------------------------------------------------------------------------------------------------------
 func _ready() -> void:
-	_show_main_menu()
-#------------------------------------------------------------------------------------------------------------
-func _show_main_menu() -> void:
-	var menu_instance: Control = MAIN_MENU_SCENE.instantiate()
-	
-	_ui.add_child(menu_instance)
-	menu_instance.start_game_requested.connect(_on_start_game_requested)
-
-#------------------------------------------------------------------------------------------------------------
-func _on_start_game_requested() -> void:
-	print("Game: Получен сигнал старта! Загружаем уровень...")
-	
-	for child in _ui.get_children():
-		child.queue_free()
-
-	var level_instance: Node2D = LEVEL_TEST_SCENE.instantiate()
-	_world.add_child(level_instance)
+	Show_Main_Menu()
 
 #------------------------------------------------------------------------------------------------------------
 func _process(delta: float) -> void:
 	pass
+#------------------------------------------------------------------------------------------------------------
+func Show_Main_Menu() -> void:
+	var menu_instance: Control = MAIN_MENU_SCENE.instantiate()
+	
+	_ui.add_child(menu_instance)
+	menu_instance.start_game_requested.connect(On_Start_Game_Requested) # bind On_Start_Game_Requested
+
+#------------------------------------------------------------------------------------------------------------
+func On_Start_Game_Requested() -> void:
+	var level_instance: Node2D = LEVEL_TEST_SCENE.instantiate()
+
+	print("Game: Received begin game signal! Level load...")
+	for child in _ui.get_children():
+		child.queue_free() # free all children in _ui
+
+	_world.add_child(level_instance)
+
 #------------------------------------------------------------------------------------------------------------
 # 1. _init()  -> C++ Construct / create instance in memory
 # 2. _enter_tree()  -> Node enter in tree SceneTree (Parent -> Child)
