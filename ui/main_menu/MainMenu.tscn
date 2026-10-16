@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://bnmeyxlpyplya"]
+
+[ext_resource type="Script" uid="uid://rfrlkusueiny" path="res://ui/main_menu/MainMenu.gd" id="1_h7g2k"]
+
+[node name="MainMenu" type="Control" unique_id=177499293]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_h7g2k")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1385379448]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StartButton" type="Button" parent="VBoxContainer" unique_id=1930764544]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start Game
+"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=736729324]
+layout_mode = 2
+text = "Exit
+
+"
+
+[node name="Label" type="Label" parent="." unique_id=241987605]
+layout_mode = 0
+offset_left = 590.0
+offset_top = 560.0
+offset_right = 1122.0
+offset_bottom = 609.0
+text = "Активация Windows
+Чтобы активировать Windows, перейдите в раздел \"Параметры\"."

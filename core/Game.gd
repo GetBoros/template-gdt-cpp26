@@ -1,12 +1,31 @@
 #------------------------------------------------------------------------------------------------------------
-extends Label
+extends Node
+#------------------------------------------------------------------------------------------------------------
+const MAIN_MENU_SCENE: PackedScene = preload("res://ui/main_menu/MainMenu.tscn")
+const LEVEL_TEST_SCENE: PackedScene = preload("res://gameplay/Level_Test.tscn")
+
+@onready var _world: Node2D = $World
+@onready var _ui: CanvasLayer = $UI
 #------------------------------------------------------------------------------------------------------------
 func _ready() -> void:
-	var tween: Tween = create_tween() # create interp
+	_show_main_menu()
+#------------------------------------------------------------------------------------------------------------
+func _show_main_menu() -> void:
+	var menu_instance: Control = MAIN_MENU_SCENE.instantiate()
 	
-	tween.tween_property(self, "position:y", position.y - 80.0, 1.5) # move up at 80px by 1.5 sec
-	tween.parallel().tween_property(self, "modulate:a", 0.0, 1.5) # in parale change transparents to 0.0 by 1.5 sec
-	tween.tween_callback(queue_free) # at the end delete node and free mem
+	_ui.add_child(menu_instance)
+	menu_instance.start_game_requested.connect(_on_start_game_requested)
+
+#------------------------------------------------------------------------------------------------------------
+func _on_start_game_requested() -> void:
+	print("Game: Получен сигнал старта! Загружаем уровень...")
+	
+	for child in _ui.get_children():
+		child.queue_free()
+
+	var level_instance: Node2D = LEVEL_TEST_SCENE.instantiate()
+	_world.add_child(level_instance)
+
 #------------------------------------------------------------------------------------------------------------
 func _process(delta: float) -> void:
 	pass
