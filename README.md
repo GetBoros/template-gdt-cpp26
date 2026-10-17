@@ -1,14 +1,28 @@
-# template-gdt-cpp26
+---
 
-A minimal, high-performance **Godot 4 + C++26** project template tailored for 2D games, WebGL exports, and transparent desktop/stream overlays on Linux (Ubuntu / Wayland).
+A minimal, high-performance **Godot 4.7+ GDExtension template powered by modern C++26 (GCC 16)**. Tailored for lightweight 2D games, Twitch streamer overlays, and Web (WebGL 2.0 / WebAssembly) exports with near-zero CPU/GPU overhead on Linux (Wayland / X11).
 
 ---
 
-## 1. System Prerequisites (Ubuntu Linux)
+## 🌟 Key Features
 
-### Install Official Godot 4 Binary to System Path
-Run the following script to fetch the latest stable Linux build and install it to `/usr/local/bin/godot`:
+* **Pure C++26 Core:** Enforces `-std=gnu++26` via GCC 16, fully prepared for Static Reflection (P2996).
+* **Zero-Cost Hot Reload:** Instant C++ code reloading in the Godot Editor without restarts (`HOT_RELOAD_ENABLED`).
+* **Feature-First Architecture:** Mirrored domain layout (`core/`, `gameplay/`, `ui/`) across GDScript and C++.
+* **Zero-Overhead Idle Loop:** Configured with `low_processor_usage_mode = true` (`epoll`-driven, 0.0% CPU/GPU in idle).
+* **iGPU Optimized:** Runs on `gl_compatibility` (OpenGL 3.3 / WebGL 2.0) with zero Vulkan overhead.
 
+---
+
+## 1. System Prerequisites
+
+### Required Toolchain (Ubuntu Linux)
+* **Godot Engine 4.7+** (installed as system binary `/usr/local/bin/godot`)
+* **Compiler:** GCC 16 (`gcc-16`, `g++-16`)
+* **Build System:** SCons
+* **Version Control:** Git (with submodule support)
+
+### Install Official Godot 4 Binary (CLI)
 ```bash
 cd /tmp
 DOWNLOAD_URL=$(curl -sL https://api.github.com/repos/godotengine/godot/releases/latest | grep -oE 'https://[^"]+linux\.x86_64\.zip' | head -n 1)
@@ -19,49 +33,111 @@ rm -f godot_linux.zip Godot_v*linux.x86_64
 godot --version
 ```
 
-### C++26 & Build System Requirements
-* **Compiler:** GCC 16+ (`g++-16` with `-std=gnu++26`)
-* **Build System:** SCons / CMake Tools
-* **VS Code Extensions:**
-  * `geequlim.godot-tools` (GDScript syntax & Language Server)
-  * `ms-vscode.cpptools` (C/C++ IntelliSense & Debugging)
-
 ---
 
-## 2. CLI Workflow & Cheat Sheet
+## 2. Quick Start: Clone & Build
 
-Run commands from the project root directory:
-
+### 1. Clone with Submodules
+Always clone recursively to pull the `godot-cpp` bindings:
 ```bash
-# Open this project directly in Godot Editor (bypassing project manager)
-godot -e
+git clone --recursive https://github.com/GetBoros/template-gdt-cpp26.git
+cd template-gdt-cpp26
+```
+*(If cloned without `--recursive`, run: `git submodule update --init --recursive`)*
 
-# Run the game immediately without opening the editor
-godot
+### 2. Build the Extension
+* **Via Terminal:**
+  ```bash
+  scons -j$(nproc)
+  ```
+* **Via VS Code:** Press **`F7`** (or `Ctrl + Shift + B`) to trigger the build task.
 
-# Run with real-time FPS monitoring printed to stdout
-godot --print-fps
-
-# Run directly on Wayland display driver (if needed)
-godot --display-driver wayland
+### 3. Open in Godot
+```bash
+godot -e .
 ```
 
 ---
 
-## 3. Architecture & Engine Settings (`project.godot`)
+## 3. Project Architecture
 
-### Rendering Backend: Compatibility (OpenGL 3.3 / WebGL 2.0)
-* Configured via `renderer/rendering_method="gl_compatibility"`.
-* Eliminates Vulkan/Forward+ overhead.
-* 1:1 direct compilation to **WebGL 2.0** for browser deployments.
-* Runs near 0% GPU load on Intel UHD 630 iGPU.
+The C++ source tree mirrors Godot's scene and asset structure (Feature-First):
 
-### Zero-Cost Idle (Event-Driven Loop)
-* `run/low_processor_usage_mode = true` blocks execution on OS compositor events (`epoll`).
-* When UI/overlay is static, frame rendering drops to 0 FPS, consuming 0.0% CPU/GPU.
+```text
+template-gdt-cpp26/
+├── bin/                        # GDExtension manifest and compiled .so libraries
+│   ├── game.gdextension        # Extension entry manifest (reloadable = true)
+│   └── libgame.*.so            # Compiled binary output (ignored by git)
+│
+├── core/                       # Godot scenes (Game orchestrator, root nodes)
+├── gameplay/                   # Godot gameplay scenes and levels
+├── ui/                         # Godot UI components and menus
+│
+├── src/                        # C++26 Source Code
+│   ├── core/                   # Handshake, ClassDB registration, singletons
+│   │   ├── register_types.h
+│   │   └── register_types.cpp
+│   ├── gameplay/               # Gameplay actors, components, physics
+│   │   ├── rotator_2d.h
+│   │   └── rotator_2d.cpp
+│   └── ui/                     # High-performance C++ UI controls
+│
+├── godot-cpp/                  # Godot C++ GDExtension bindings (Git submodule)
+├── SConstruct                  # SCons build orchestration script (GCC 16, C++26)
+├── .clangd                     # Local language server configuration
+└── project.godot               # Engine configuration & SSOT
+```
 
-### Borderless Transparent Overlay Configuration
-To make a fully transparent desktop HUD or Twitch overlay:
+---
+
+## 4. IDE Setup (VS Code & clangd)
+
+### Recommended Extensions
+* `llvm-vs-code-extensions.vscode-clangd` (C++26 IntelliSense & Diagnostics)
+* `geequlim.godot-tools` (GDScript syntax & Language Server)
+
+### Local clangd Configuration
+Ensure your local `.clangd` file in the project root points to your workspace paths for zero-error IntelliSense:
+```yaml
+CompileFlags:
+  Add:
+    - "-I/path/to/project/src"
+    - "-I/path/to/project/godot-cpp/include"
+    - "-I/path/to/project/godot-cpp/gen/include"
+    - "-I/path/to/project/godot-cpp/gdextension"
+    - "-std=gnu++26"
+```
+
+---
+
+## 5. CLI Workflow & Cheat Sheet
+
+Run commands from the project root:
+
+```bash
+# Open project directly in Godot Editor
+godot -e .
+
+# Run the game immediately
+godot .
+
+# Run with real-time FPS counter in terminal
+godot --print-fps .
+
+# Force Wayland native display driver
+godot --display-driver wayland .
+```
+
+---
+
+## 6. Engine Profile & Transparent Overlay
+
+### Zero-Cost Idle & Rendering
+* **Compatibility Renderer:** Pure OpenGL 3.3 / WebGL 2.0 without Vulkan compositor overhead.
+* **Low Processor Usage:** `run/low_processor_usage_mode = true` sleeps the CPU loop until OS compositor events occur.
+
+### Transparent Borderless Window (Twitch Overlay)
+Configured in `project.godot`:
 ```ini
 [display]
 window/size/transparent=true
@@ -76,73 +152,9 @@ viewport/transparent_background=true
 
 ---
 
-## 4. VS Code & Language Server (LSP) Setup
+## 7. Using This Template for New Projects
 
-1. Open project folder in VS Code:
-   ```bash
-   code ~/Work/template-gd-cpp26
-   ```
-2. Enable external editor in Godot:
-   * **Editor -> Editor Settings -> Text Editor -> External**
-   * Check **Use External Editor**.
-   * **Exec Path:** `code`
-   * **Exec Flags:** `{project} --goto {file}:{line}:{col}`
-3. Godot automatically hosts LSP on port `6005`. The `godot-tools` extension connects automatically.
-
----
-
-## 5. Repository Template Checklist
-
-When creating a new project from this template:
-1. Click **Use this template** on GitHub.
-2. Clone repository:
-   ```bash
-   git clone <REPO_URL>
-   cd <REPO_NAME>
-   ```
+1. Click **Use this template** -> **Create a new repository** on GitHub.
+2. Clone your new repository with `--recursive`.
 3. Update project name inside `project.godot` (`config/name`).
-4. Launch editor with `godot -e`.
-```
-
----
-
-```markdown
-## 🛠 Development Setup
-
-### Prerequisites
-- **Godot Engine 4.7+**
-- **GCC 16** with C++26 support (`g++-16`)
-- **SCons** (build system)
-- **Git** (with submodules support)
-
-### 1. Clone Repository
-Ensure submodules (`godot-cpp`) are initialized:
-```bash
-git clone --recursive <repository-url>
-```
-*(If already cloned, run: `git submodule update --init --recursive`)*
-
-### 2. Building the C++26 GDExtension
-- **Command Line:**
-  ```bash
-  scons -j$(nproc)
-  ```
-- **VS Code:** Press `F7` (or `Ctrl + Shift + B`) to run the default build task.
-
-### 3. IDE Language Server (clangd)
-If you use the `clangd` extension in VS Code for autocomplete, create a local `.clangd` file in the project root with your machine-specific absolute include paths (this file is ignored by `.gitignore`):
-
-```yaml
-CompileFlags:
-  Add:
-    - "-I/path/to/project/src"
-    - "-I/path/to/project/godot-cpp/include"
-    - "-I/path/to/project/godot-cpp/gen/include"
-    - "-I/path/to/project/godot-cpp/gdextension"
-    - "-std=gnu++26"
-```
-```
-
----
-
----
+4. Build with `scons -j$(nproc)` and launch with `godot -e .`.
