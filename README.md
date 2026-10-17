@@ -155,6 +155,9 @@ viewport/transparent_background=true
 ## 7. Using This Template for New Projects
 
 1. Click **Use this template** -> **Create a new repository** on GitHub.
-2. Clone your new repository with `--recursive`.
+2. Clone your new repository with: git clone `--recursive` url
 3. Update project name inside `project.godot` (`config/name`).
 4. Build with `scons -j$(nproc)` and launch with `godot -e .`.
+5. Update your work folder in .clangd.
+
+
