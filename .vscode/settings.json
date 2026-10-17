@@ -1,6 +1,8 @@
 {
     "cmake.configureOnOpen": false,
     "cmake.ignoreCMakeLists": true,
+    "cmake.autoSelectActiveFolder": false,
+    "cmake.autoDetectSourceDirectory": false,
     "editor.detectIndentation": false,
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
@@ -15,5 +17,5 @@
     "[cpp]": {
         "editor.insertSpaces": true,
         "editor.tabSize": 4
-    }
+    },
 }
