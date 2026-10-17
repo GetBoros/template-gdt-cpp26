@@ -20,7 +20,7 @@ env.Append(CPPDEFINES=["HOT_RELOAD_ENABLED"])
 env.Append(CPPPATH=["src"])
 
 # 6. Collect sources from src/
-sources = Glob("src/*.cpp")
+sources = Glob("src/*.cpp") + Glob("src/*/*.cpp")
 
 # 7. Target shared library in bin/
 target_lib = f"bin/libgame.{env['platform']}.{env['target']}.x86_64{env['SHLIBSUFFIX']}"

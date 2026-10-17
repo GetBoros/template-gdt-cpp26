@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------------------------------------
-#include <rotator_2d.h>
+#include <gameplay/rotator_2d.h>
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>

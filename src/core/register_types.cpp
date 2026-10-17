@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------------------------------------
-#include <register_types.h>
-#include <rotator_2d.h>
+#include <core/register_types.h>
+#include <gameplay/rotator_2d.h>
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
