@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Linux (C++26 GCC 16)",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/godot-cpp/include/**",
+                "${workspaceFolder}/godot-cpp/gen/include/**",
+                "${workspaceFolder}/godot-cpp/gdextension/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++-16",
+            "cStandard": "c17",
+            "cppStandard": "c++26",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

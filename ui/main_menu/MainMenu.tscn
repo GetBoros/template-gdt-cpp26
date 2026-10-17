@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bnmeyxlpyplya"]
 
 [ext_resource type="Script" uid="uid://rfrlkusueiny" path="res://ui/main_menu/MainMenu.gd" id="1_h7g2k"]
+[ext_resource type="Texture2D" uid="uid://j3jl88k5420e" path="res://icon.svg" id="2_blw3s"]
 
 [node name="MainMenu" type="Control" unique_id=177499293]
 layout_mode = 3
@@ -45,3 +46,10 @@ offset_right = 1122.0
 offset_bottom = 609.0
 text = "Активация Windows
 Чтобы активировать Windows, перейдите в раздел \"Параметры\"."
+
+[node name="Rotator2D" type="Rotator2D" parent="." unique_id=1718443452]
+position = Vector2(206, 216)
+rotation = 216.7604
+
+[node name="Sprite2D" type="Sprite2D" parent="Rotator2D" unique_id=1008070191]
+texture = ExtResource("2_blw3s")

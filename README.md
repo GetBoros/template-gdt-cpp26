@@ -105,3 +105,44 @@ When creating a new project from this template:
 ```
 
 ---
+
+```markdown
+## 🛠 Development Setup
+
+### Prerequisites
+- **Godot Engine 4.7+**
+- **GCC 16** with C++26 support (`g++-16`)
+- **SCons** (build system)
+- **Git** (with submodules support)
+
+### 1. Clone Repository
+Ensure submodules (`godot-cpp`) are initialized:
+```bash
+git clone --recursive <repository-url>
+```
+*(If already cloned, run: `git submodule update --init --recursive`)*
+
+### 2. Building the C++26 GDExtension
+- **Command Line:**
+  ```bash
+  scons -j$(nproc)
+  ```
+- **VS Code:** Press `F7` (or `Ctrl + Shift + B`) to run the default build task.
+
+### 3. IDE Language Server (clangd)
+If you use the `clangd` extension in VS Code for autocomplete, create a local `.clangd` file in the project root with your machine-specific absolute include paths (this file is ignored by `.gitignore`):
+
+```yaml
+CompileFlags:
+  Add:
+    - "-I/path/to/project/src"
+    - "-I/path/to/project/godot-cpp/include"
+    - "-I/path/to/project/godot-cpp/gen/include"
+    - "-I/path/to/project/godot-cpp/gdextension"
+    - "-std=gnu++26"
+```
+```
+
+---
+
+---
