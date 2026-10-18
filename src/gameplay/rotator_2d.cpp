@@ -12,7 +12,6 @@
 void Rotator2D::_ready()
 {
     godot::UtilityFunctions::print("Rotator2D initialized from C++!");
-    godot::UtilityFunctions::print("HOT RELOAD WORKS! New speed applied!");
 }
 //------------------------------------------------------------------------------------------------------------
 void Rotator2D::_process(double delta)
@@ -43,5 +42,12 @@ bool Rotator2D::Get_Is_Enabled() const
 float Rotator2D::Get_Speed() const
 {
     return _speed;
+}
+//------------------------------------------------------------------------------------------------------------
+void Rotator2D::Reset_Speed()
+{
+    _speed = 2.0f;
+    
+    godot::UtilityFunctions::print("Speed has been reset to 0 from C++!");
 }
 //------------------------------------------------------------------------------------------------------------

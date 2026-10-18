@@ -16,6 +16,8 @@ func _ready() -> void:
 
 	_start_button.pressed.connect(On_Start_Pressed)
 	_quit_button.pressed.connect(On_Quit_Pressed)
+
+	$Rotator2D.Reset_Speed()
 	
 #------------------------------------------------------------------------------------------------------------
 func On_Start_Pressed() -> void:

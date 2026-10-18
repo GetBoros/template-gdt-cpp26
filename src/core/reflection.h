@@ -1,6 +1,14 @@
 //------------------------------------------------------------------------------------------------------------
 #pragma once
 //------------------------------------------------------------------------------------------------------------
+// C++26 P3394 Reflection Annotation Tag
+struct Callable_Tag
+{
+
+};
+//------------------------------------------------------------------------------------------------------------
+inline constexpr Callable_Tag Callable { };
+//------------------------------------------------------------------------------------------------------------
 // Replaces standard GDCLASS and completely eliminates manual _bind_methods boilerplate
 #define GDCLASS_REFLECT(m_class, m_inherits)                                     \
     GDCLASS(m_class, m_inherits);                                              \
@@ -25,6 +33,25 @@ private:
 //------------------------------------------------------------------------------------------------------------
 namespace GDExtension_Reflect
 {
+    // Checks if an AST entity has a specific P3394 annotation tag
+    template <typename Tag>
+    consteval bool Has_Annotation(std::meta::info member)
+    {
+        const auto annotations = std::meta::annotations_of(member);
+
+        for (std::meta::info ann : annotations)
+        {
+            const std::meta::info type = std::meta::type_of(ann);
+
+            if (type == ^^Tag || type == ^^const Tag)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     template <typename T>
     consteval godot::Variant::Type Deduce_Variant_Type()
     {
@@ -79,6 +106,7 @@ namespace GDExtension_Reflect
         std::meta::info setter;
     };
 
+    // Scans class AST for matching Get_<Name> and Set_<Name> pairs
     template <typename T>
     consteval auto Collect_Property_Pairs()
     {
@@ -191,20 +219,98 @@ namespace GDExtension_Reflect
     }
 
     template <typename T, std::size_t... Is>
-    void Bind_Class_Impl(std::index_sequence<Is...>)
+    void Bind_Properties_Impl(std::index_sequence<Is...>)
     {
         constexpr auto properties = Get_Properties_Array<T>();
         (Bind_Single_Property<properties[Is].getter, properties[Is].setter>(), ...);
     }
 
+    // Scans class AST for callable methods annotated with [[=Expose]]
+    template <typename T>
+    consteval auto Collect_Exposed_Methods()
+    {
+        constexpr auto context = std::meta::access_context::current();
+        const auto members = std::meta::members_of(^^T, context);
+
+        std::vector<std::meta::info> methods;
+
+        for (std::meta::info m : members)
+        {
+            if (!std::meta::is_function(m) || !std::meta::has_identifier(m))
+            {
+                continue;
+            }
+
+            std::string_view name = std::meta::identifier_of(m);
+
+            // Skip engine virtuals (_ready, _process) and property accessors (Get_*, Set_*)
+            if (name.starts_with("_") || name.starts_with("Get_") || name.starts_with("Set_"))
+            {
+                continue;
+            }
+
+            if (Has_Annotation<Callable_Tag>(m))
+            {
+                methods.push_back(m);
+            }
+        }
+
+        return methods;
+    }
+
+    template <typename T>
+    consteval std::size_t Get_Exposed_Method_Count()
+    {
+        return Collect_Exposed_Methods<T>().size();
+    }
+
+    template <typename T>
+    consteval auto Get_Exposed_Methods_Array()
+    {
+        constexpr std::size_t count = Get_Exposed_Method_Count<T>();
+        std::array<std::meta::info, count> array{};
+        const auto vector = Collect_Exposed_Methods<T>();
+
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            array[i] = vector[i];
+        }
+
+        return array;
+    }
+
+    template <std::meta::info Method>
+    void Bind_Single_Method()
+    {
+        constexpr auto method_ptr = &[: Method :];
+        constexpr std::string_view method_name = std::meta::identifier_of(Method);
+
+        godot::ClassDB::bind_method(godot::D_METHOD(method_name.data()), method_ptr);
+    }
+
+    template <typename T, std::size_t... Is>
+    void Bind_Methods_Impl(std::index_sequence<Is...>)
+    {
+        constexpr auto methods = Get_Exposed_Methods_Array<T>();
+        (Bind_Single_Method<methods[Is]>(), ...);
+    }
+
+    // Main API entry point: Automatically binds properties and [[=Expose]] methods
     template <typename T>
     void Auto_Bind_Class()
     {
+        // 1. Auto-bind properties (Get_*/Set_* pairs)
         constexpr std::size_t property_count = Get_Property_Count<T>();
-
         if constexpr (property_count > 0)
         {
-            Bind_Class_Impl<T>(std::make_index_sequence<property_count>{});
+            Bind_Properties_Impl<T>(std::make_index_sequence<property_count>{});
+        }
+
+        // 2. Auto-bind [[=Expose]] callable methods
+        constexpr std::size_t method_count = Get_Exposed_Method_Count<T>();
+        if constexpr (method_count > 0)
+        {
+            Bind_Methods_Impl<T>(std::make_index_sequence<method_count>{});
         }
     }
 }

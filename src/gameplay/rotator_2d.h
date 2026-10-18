@@ -21,6 +21,8 @@ public:
     bool Get_Is_Enabled() const;
     float Get_Speed() const;
 
+    [[=Callable]] void Reset_Speed();
+
 private:
     bool Is_Enabled = true;
     float _speed = 2.0f;
