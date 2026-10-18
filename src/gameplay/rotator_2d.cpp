@@ -1,5 +1,6 @@
 //------------------------------------------------------------------------------------------------------------
 #include <gameplay/rotator_2d.h>
+#include <core/reflection.h>
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -8,15 +9,19 @@
 
 
 
+
 // Rotator2D
 void Rotator2D::_bind_methods()
 {
-    // 1. Bind methods so Godot's C-ABI can call them
-    godot::ClassDB::bind_method(godot::D_METHOD("Get_Speed"), &Rotator2D::Get_Speed);
-    godot::ClassDB::bind_method(godot::D_METHOD("Set_Speed", "speed"), &Rotator2D::Set_Speed);
+    // Compile-time verification of AST introspection
+    GDExtension_Reflect::Auto_Bind_Class<Rotator2D>();
 
-    // 2. Expose property to the Inspector (Analogue of UE5 UPROPERTY(EditAnywhere))
-    ADD_PROPERTY(godot::PropertyInfo(godot::Variant::FLOAT, "speed"), "Set_Speed", "Get_Speed");
+    // 1. Bind methods so Godot's C-ABI can call them
+    // godot::ClassDB::bind_method(godot::D_METHOD("Get_Speed"), &Rotator2D::Get_Speed);
+    // godot::ClassDB::bind_method(godot::D_METHOD("Set_Speed", "speed"), &Rotator2D::Set_Speed);
+
+    // // 2. Expose property to the Inspector (Analogue of UE5 UPROPERTY(EditAnywhere))
+    // ADD_PROPERTY(godot::PropertyInfo(godot::Variant::FLOAT, "speed"), "Set_Speed", "Get_Speed");
 }
 //------------------------------------------------------------------------------------------------------------
 void Rotator2D::_ready()
@@ -27,14 +32,27 @@ void Rotator2D::_ready()
 //------------------------------------------------------------------------------------------------------------
 void Rotator2D::_process(double delta)
 {
+    if (!Is_Enabled)
+        return;
     // Zero-Cost: Direct transform update without heap allocations
     float current_rotation = get_rotation();
+
     set_rotation(current_rotation + _speed * static_cast<float>(delta));
+}
+//------------------------------------------------------------------------------------------------------------
+void Rotator2D::Set_Is_Enabled(bool value)
+{
+    Is_Enabled = value;
 }
 //------------------------------------------------------------------------------------------------------------
 void Rotator2D::Set_Speed(float speed)
 {
     _speed = speed;
+}
+//------------------------------------------------------------------------------------------------------------
+bool Rotator2D::Get_Is_Enabled() const
+{
+    return Is_Enabled;
 }
 //------------------------------------------------------------------------------------------------------------
 float Rotator2D::Get_Speed() const

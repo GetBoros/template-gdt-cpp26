@@ -1,6 +1,5 @@
 //------------------------------------------------------------------------------------------------------------
-#ifndef ROTATOR_2D_H
-#define ROTATOR_2D_H
+#pragma once
 //------------------------------------------------------------------------------------------------------------
 #include <godot_cpp/classes/node2d.hpp>
 //------------------------------------------------------------------------------------------------------------
@@ -12,19 +11,22 @@ public:
     ~Rotator2D() override = default;
     Rotator2D() = default;
 
-    void _ready() override;
-    void _process(double delta) override;
+    virtual void _ready() override;
+    virtual void _process(double delta) override;
 
+    void Set_Is_Enabled(bool value);
     void Set_Speed(float speed);
+
+    bool Get_Is_Enabled() const;
     float Get_Speed() const;
+
 
 protected:
     static void _bind_methods();
 
 private:
+    bool Is_Enabled = true;
     float _speed = 2.0f;
 
 };
-//------------------------------------------------------------------------------------------------------------
-#endif // ROTATOR_2D_H
 //------------------------------------------------------------------------------------------------------------

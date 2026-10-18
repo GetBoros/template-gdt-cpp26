@@ -1,7 +1,10 @@
 CompileFlags:
   Add:
-    - "-I/home/get_boros/Work/template-gd-cpp26/src"
-    - "-I/home/get_boros/Work/template-gd-cpp26/godot-cpp/include"
-    - "-I/home/get_boros/Work/template-gd-cpp26/godot-cpp/gen/include"
-    - "-I/home/get_boros/Work/template-gd-cpp26/godot-cpp/gdextension"
+    - "-I/home/get_boros/Work/twitch-overlay-game/src"
+    - "-I/home/get_boros/Work/twitch-overlay-game/godot-cpp/include"
+    - "-I/home/get_boros/Work/twitch-overlay-game/godot-cpp/gen/include"
+    - "-I/home/get_boros/Work/twitch-overlay-game/godot-cpp/gdextension"
     - "-std=gnu++26"
+
+Diagnostics:
+  Suppress: "*"

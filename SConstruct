@@ -6,24 +6,28 @@ import sys
 # 1. Initialize godot-cpp environment with Godot 4.7 API
 env = SConscript("godot-cpp/SConstruct", {"api_version": "4.7"})
 
-# 2. Enforce GCC 16
-env.Replace(CXX="g++-16")
-env.Replace(CC="gcc-16")
+# 2. Clone environment specifically for our game module to isolate godot-cpp
+game_env = env.Clone()
 
-# 3. Enforce GNU C++26 Standard
-env["CXXFLAGS"] = [flag for flag in env["CXXFLAGS"] if not flag.startswith("-std=")]
-env.Append(CXXFLAGS=["-std=gnu++26"])
+# 3. Enforce GCC 16 on our game environment
+game_env.Replace(CXX="g++-16")
+game_env.Replace(CC="gcc-16")
 
-# 4. Enable GDExtension Hot Reloading support
-env.Append(CPPDEFINES=["HOT_RELOAD_ENABLED"])
-# 5. Include paths
-env.Append(CPPPATH=["src"])
+# 4. Enforce GNU C++26 Standard and P2996 Static Reflection
+game_env["CXXFLAGS"] = [flag for flag in game_env["CXXFLAGS"] if not flag.startswith("-std=")]
+game_env.Append(CXXFLAGS=["-std=gnu++26", "-freflection"])
 
-# 6. Collect sources from src/
+# 5. Enable GDExtension Hot Reloading support
+game_env.Append(CPPDEFINES=["HOT_RELOAD_ENABLED"])
+
+# 6. Include paths
+game_env.Append(CPPPATH=["src"])
+
+# 7. Collect sources from src/
 sources = Glob("src/*.cpp") + Glob("src/*/*.cpp")
 
-# 7. Target shared library in bin/
-target_lib = f"bin/libgame.{env['platform']}.{env['target']}.x86_64{env['SHLIBSUFFIX']}"
-library = env.SharedLibrary(target=target_lib, source=sources)
+# 8. Target shared library in bin/
+target_lib = f"bin/libgame.{game_env['platform']}.{game_env['target']}.x86_64{game_env['SHLIBSUFFIX']}"
+library = game_env.SharedLibrary(target=target_lib, source=sources)
 
 Default(library)
