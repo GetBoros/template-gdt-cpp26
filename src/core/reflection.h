@@ -1,19 +1,19 @@
+//------------------------------------------------------------------------------------------------------------
 #pragma once
 //------------------------------------------------------------------------------------------------------------
-#include <godot_cpp/core/class_db.hpp>
+// Replaces standard GDCLASS and completely eliminates manual _bind_methods boilerplate
+#define GDCLASS_REFLECT(m_class, m_inherits)                                     \
+    GDCLASS(m_class, m_inherits);                                              \
+protected:                                                                     \
+    static void _bind_methods()                                                \
+    {                                                                          \
+        GDExtension_Reflect::Auto_Bind_Class<m_class>();                       \
+    }                                                                          \
+private:
 //------------------------------------------------------------------------------------------------------------
-#if defined(__clang__)
-
-// Fallback interface for IDE language server (Clangd) to eliminate parser errors
-namespace GDExtension_Reflect
-{
-    template <typename T>
-    void Auto_Bind_Class()
-    {
-    }
-}
-
-#else
+#if !defined(__clang__)  // Fallback interface for IDE language server (Clangd) to eliminate parser errors
+//------------------------------------------------------------------------------------------------------------
+#include <godot_cpp/core/class_db.hpp>
 
 // Real C++26 P2996 static reflection implementation for GCC 16
 #include <array>
@@ -22,7 +22,6 @@ namespace GDExtension_Reflect
 #include <type_traits>
 #include <utility>
 #include <vector>
-
 //------------------------------------------------------------------------------------------------------------
 namespace GDExtension_Reflect
 {
@@ -209,5 +208,17 @@ namespace GDExtension_Reflect
         }
     }
 }
+//------------------------------------------------------------------------------------------------------------
+#else
+//------------------------------------------------------------------------------------------------------------
+namespace GDExtension_Reflect
+{
+    template <typename T>
+    void Auto_Bind_Class()
+    {
 
+    }
+}
+//------------------------------------------------------------------------------------------------------------
 #endif // __clang__
+//------------------------------------------------------------------------------------------------------------
