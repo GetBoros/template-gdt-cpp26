@@ -1,6 +1,9 @@
 //------------------------------------------------------------------------------------------------------------
 #pragma once
 //------------------------------------------------------------------------------------------------------------
+#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/object.hpp>
+//------------------------------------------------------------------------------------------------------------
 // C++26 P3394 Reflection Annotation Tag
 struct Callable_Tag
 {
@@ -8,6 +11,31 @@ struct Callable_Tag
 };
 //------------------------------------------------------------------------------------------------------------
 inline constexpr Callable_Tag Callable { };
+//------------------------------------------------------------------------------------------------------------
+template <typename... Args> class Delegate
+{
+public:
+    constexpr explicit Delegate(const char* signal_name)
+        : _signal_name(signal_name) { }
+
+    // Type-safe broadcast: compiler verifies all arguments match Args...
+    void Broadcast(godot::Object* owner, const Args&... args) const
+    {
+        if (owner != nullptr)
+        {
+            owner->emit_signal(_signal_name, args...);
+        }
+    }
+
+    [[nodiscard]] const godot::StringName& Get_Name() const
+    {
+        return _signal_name;
+    }
+
+private:
+    godot::StringName _signal_name;
+
+};
 //------------------------------------------------------------------------------------------------------------
 // Replaces standard GDCLASS and completely eliminates manual _bind_methods boilerplate
 #define GDCLASS_REFLECT(m_class, m_inherits)                                     \
@@ -18,6 +46,12 @@ protected:                                                                     \
         GDExtension_Reflect::Auto_Bind_Class<m_class>();                       \
     }                                                                          \
 private:
+
+//------------------------------------------------------------------------------------------------------------
+// Generates both variable name and string literal automatically:
+#define DECLARE_DELEGATE(name, ...) \
+    Delegate<__VA_ARGS__> name{#name}
+
 //------------------------------------------------------------------------------------------------------------
 #if !defined(__clang__)  // Fallback interface for IDE language server (Clangd) to eliminate parser errors
 //------------------------------------------------------------------------------------------------------------
@@ -33,7 +67,24 @@ private:
 //------------------------------------------------------------------------------------------------------------
 namespace GDExtension_Reflect
 {
-    // Checks if an AST entity has a specific P3394 annotation tag
+    // Trait to detect Delegate<Args...> types inside GDExtension_Reflect namespace
+    template <typename T>
+    struct Is_Delegate_Trait : std::false_type
+    {
+    };
+
+    template <typename... Args>
+    struct Is_Delegate_Trait<Delegate<Args...>> : std::true_type
+    {
+    };
+
+    template <typename T>
+    inline constexpr bool Is_Delegate_V = Is_Delegate_Trait<std::remove_cvref_t<T>>::value;
+
+    // Unpacks Delegate<Args...> and registers godot::MethodInfo signal
+    template <typename T>
+    struct Delegate_Binder;
+
     template <typename Tag>
     consteval bool Has_Annotation(std::meta::info member)
     {
@@ -77,6 +128,10 @@ namespace GDExtension_Reflect
         {
             return godot::Variant::VECTOR2;
         }
+        else if constexpr (std::is_pointer_v<Decayed> && std::is_base_of_v<godot::Object, std::remove_pointer_t<Decayed>>)
+        {
+            return godot::Variant::OBJECT;
+        }
         else
         {
             return godot::Variant::NIL;
@@ -106,7 +161,6 @@ namespace GDExtension_Reflect
         std::meta::info setter;
     };
 
-    // Scans class AST for matching Get_<Name> and Set_<Name> pairs
     template <typename T>
     consteval auto Collect_Property_Pairs()
     {
@@ -174,9 +228,10 @@ namespace GDExtension_Reflect
     consteval auto Format_Property_Name()
     {
         constexpr std::string_view getter_name = std::meta::identifier_of(Getter);
-        std::string_view base = getter_name.substr(4);
-
         std::array<char, 64> buffer{};
+
+        // Strip "Get_"
+        std::string_view base = getter_name.substr(4);
 
         for (std::size_t i = 0; i < base.size() && i < 63; ++i)
         {
@@ -225,7 +280,6 @@ namespace GDExtension_Reflect
         (Bind_Single_Property<properties[Is].getter, properties[Is].setter>(), ...);
     }
 
-    // Scans class AST for callable methods annotated with [[=Expose]]
     template <typename T>
     consteval auto Collect_Exposed_Methods()
     {
@@ -243,7 +297,6 @@ namespace GDExtension_Reflect
 
             std::string_view name = std::meta::identifier_of(m);
 
-            // Skip engine virtuals (_ready, _process) and property accessors (Get_*, Set_*)
             if (name.starts_with("_") || name.starts_with("Get_") || name.starts_with("Set_"))
             {
                 continue;
@@ -295,7 +348,115 @@ namespace GDExtension_Reflect
         (Bind_Single_Method<methods[Is]>(), ...);
     }
 
-    // Main API entry point: Automatically binds properties and [[=Expose]] methods
+    // Converts "On_Speed_Changed" -> "on_speed_changed"
+    template <std::meta::info Member>
+    consteval auto Format_Signal_Name()
+    {
+        constexpr std::string_view member_name = std::meta::identifier_of(Member);
+        std::array<char, 64> buffer{};
+
+        for (std::size_t i = 0; i < member_name.size() && i < 63; ++i)
+        {
+            char c = member_name[i];
+            if (c >= 'A' && c <= 'Z')
+            {
+                c = static_cast<char>(c + ('a' - 'A'));
+            }
+            buffer[i] = c;
+        }
+
+        return buffer;
+    }
+
+    template <typename T>
+    struct Delegate_Binder;
+
+    template <typename... Args>
+    struct Delegate_Binder<Delegate<Args...>>
+    {
+        static void Bind(const char* signal_name, const godot::StringName& class_name)
+        {
+            godot::MethodInfo signal_info(signal_name);
+            std::size_t arg_index = 0;
+
+            ([&]()
+            {
+                constexpr godot::Variant::Type var_type = Deduce_Variant_Type<Args>();
+                const std::string arg_name = "arg" + std::to_string(arg_index++);
+                signal_info.arguments.push_back(godot::PropertyInfo(var_type, arg_name.c_str()));
+            }(), ...);
+
+            godot::ClassDB::add_signal(class_name, signal_info);
+        }
+    };
+
+    template <typename T>
+    consteval auto Collect_Delegates()
+    {
+        constexpr auto context = std::meta::access_context::current();
+        const auto fields = std::meta::nonstatic_data_members_of(^^T, context);
+
+        std::vector<std::meta::info> delegates;
+
+        for (std::meta::info field : fields)
+        {
+            if (!std::meta::has_identifier(field))
+            {
+                continue;
+            }
+
+            std::string_view name = std::meta::identifier_of(field);
+            if (name.starts_with("_"))
+            {
+                continue;
+            }
+
+            delegates.push_back(field);
+        }
+
+        return delegates;
+    }
+
+    template <typename T>
+    consteval std::size_t Get_Delegate_Count()
+    {
+        return Collect_Delegates<T>().size();
+    }
+
+    template <typename T>
+    consteval auto Get_Delegates_Array()
+    {
+        constexpr std::size_t count = Get_Delegate_Count<T>();
+        std::array<std::meta::info, count> array{};
+        const auto vector = Collect_Delegates<T>();
+
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            array[i] = vector[i];
+        }
+
+        return array;
+    }
+
+    template <typename ClassT, std::meta::info Member>
+    void Bind_Single_Delegate()
+    {
+        using Field_Type = [: std::meta::type_of(Member) :];
+
+        if constexpr (Is_Delegate_V<Field_Type>)
+        {
+            constexpr auto signal_name_buffer = Format_Signal_Name<Member>();
+            Delegate_Binder<Field_Type>::Bind(signal_name_buffer.data(), ClassT::get_class_static());
+        }
+    }
+
+    template <typename T, std::size_t... Is>
+    void Bind_Delegates_Impl(std::index_sequence<Is...>)
+    {
+        constexpr auto delegates = Get_Delegates_Array<T>();
+        (Bind_Single_Delegate<T, delegates[Is]>(), ...);
+    }
+
     template <typename T>
     void Auto_Bind_Class()
     {
@@ -306,11 +467,18 @@ namespace GDExtension_Reflect
             Bind_Properties_Impl<T>(std::make_index_sequence<property_count>{});
         }
 
-        // 2. Auto-bind [[=Expose]] callable methods
+        // 2. Auto-bind [[=Callable]] methods
         constexpr std::size_t method_count = Get_Exposed_Method_Count<T>();
         if constexpr (method_count > 0)
         {
             Bind_Methods_Impl<T>(std::make_index_sequence<method_count>{});
+        }
+
+        // 3. Auto-bind Delegate<Args...> signals
+        constexpr std::size_t delegate_count = Get_Delegate_Count<T>();
+        if constexpr (delegate_count > 0)
+        {
+            Bind_Delegates_Impl<T>(std::make_index_sequence<delegate_count>{});
         }
     }
 }

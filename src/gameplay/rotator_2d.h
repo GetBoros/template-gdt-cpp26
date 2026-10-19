@@ -22,6 +22,8 @@ public:
     float Get_Speed() const;
 
     [[=Callable]] void Reset_Speed();
+    
+    Delegate<float> On_Speed_Changed {"on_speed_changed"};
 
 private:
     bool Is_Enabled = true;

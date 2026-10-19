@@ -32,6 +32,8 @@ void Rotator2D::Set_Is_Enabled(bool value)
 void Rotator2D::Set_Speed(float speed)
 {
     _speed = speed;
+
+    On_Speed_Changed.Broadcast(this, _speed);
 }
 //------------------------------------------------------------------------------------------------------------
 bool Rotator2D::Get_Is_Enabled() const
