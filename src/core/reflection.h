@@ -4,8 +4,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/object.hpp>
 //------------------------------------------------------------------------------------------------------------
-// C++26 P3394 Reflection Annotation Tag
-struct Callable_Tag
+struct Callable_Tag  // C++26 P3394 Reflection Annotation Tag
 {
 
 };
@@ -15,25 +14,25 @@ inline constexpr Callable_Tag Callable { };
 template <typename... Args> class Delegate
 {
 public:
-    constexpr explicit Delegate(const char* signal_name)
-        : _signal_name(signal_name) { }
+    constexpr explicit Delegate(const char *signal_name)
+        : Signal_Name(signal_name) { }
 
     // Type-safe broadcast: compiler verifies all arguments match Args...
-    void Broadcast(godot::Object* owner, const Args&... args) const
+    void Broadcast(godot::Object *owner, const Args&... args) const
     {
         if (owner != nullptr)
         {
-            owner->emit_signal(_signal_name, args...);
+            owner->emit_signal(Signal_Name, args...);
         }
     }
 
-    [[nodiscard]] const godot::StringName& Get_Name() const
+    [[nodiscard]] const godot::StringName &Get_Name() const
     {
-        return _signal_name;
+        return Signal_Name;
     }
 
 private:
-    godot::StringName _signal_name;
+    godot::StringName Signal_Name;
 
 };
 //------------------------------------------------------------------------------------------------------------
@@ -68,25 +67,19 @@ private:
 namespace GDExtension_Reflect
 {
     // Trait to detect Delegate<Args...> types inside GDExtension_Reflect namespace
-    template <typename T>
-    struct Is_Delegate_Trait : std::false_type
+    template <typename T> struct Is_Delegate_Trait : std::false_type
     {
     };
 
-    template <typename... Args>
-    struct Is_Delegate_Trait<Delegate<Args...>> : std::true_type
+    template <typename... Args> struct Is_Delegate_Trait<Delegate<Args...>> : std::true_type
     {
     };
 
-    template <typename T>
-    inline constexpr bool Is_Delegate_V = Is_Delegate_Trait<std::remove_cvref_t<T>>::value;
+    template <typename T> inline constexpr bool Is_Delegate_V = Is_Delegate_Trait<std::remove_cvref_t<T>>::value;
 
-    // Unpacks Delegate<Args...> and registers godot::MethodInfo signal
-    template <typename T>
-    struct Delegate_Binder;
+    template <typename T> struct Delegate_Binder;  // Unpacks Delegate<Args...> and registers godot::MethodInfo signal
 
-    template <typename Tag>
-    consteval bool Has_Annotation(std::meta::info member)
+    template <typename Tag> consteval bool Has_Annotation(std::meta::info member)
     {
         const auto annotations = std::meta::annotations_of(member);
 
@@ -99,12 +92,10 @@ namespace GDExtension_Reflect
                 return true;
             }
         }
-
         return false;
     }
 
-    template <typename T>
-    consteval godot::Variant::Type Deduce_Variant_Type()
+    template <typename T> consteval godot::Variant::Type Deduce_Variant_Type()
     {
         using Decayed = std::decay_t<T>;
 
@@ -128,7 +119,7 @@ namespace GDExtension_Reflect
         {
             return godot::Variant::VECTOR2;
         }
-        else if constexpr (std::is_pointer_v<Decayed> && std::is_base_of_v<godot::Object, std::remove_pointer_t<Decayed>>)
+        else if constexpr (std::is_pointer_v<Decayed> && std::is_base_of_v<godot::Object, std::remove_pointer_t<Decayed> >)
         {
             return godot::Variant::OBJECT;
         }
@@ -138,18 +129,15 @@ namespace GDExtension_Reflect
         }
     }
 
-    template <typename T>
-    struct Getter_Traits;
+    template <typename T> struct Getter_Traits;
 
-    template <typename ClassT, typename ReturnT>
-    struct Getter_Traits<ReturnT (ClassT::*)() const>
+    template <typename ClassT, typename ReturnT> struct Getter_Traits<ReturnT (ClassT::*)() const>
     {
         using Class = ClassT;
         using Return_Type = ReturnT;
     };
 
-    template <typename ClassT, typename ReturnT>
-    struct Getter_Traits<ReturnT (ClassT::*)()>
+    template <typename ClassT, typename ReturnT> struct Getter_Traits<ReturnT (ClassT::*)()>
     {
         using Class = ClassT;
         using Return_Type = ReturnT;
@@ -161,32 +149,29 @@ namespace GDExtension_Reflect
         std::meta::info setter;
     };
 
-    template <typename T>
-    consteval auto Collect_Property_Pairs()
+    template <typename T> consteval auto Collect_Property_Pairs()
     {
         constexpr auto context = std::meta::access_context::current();
         const auto members = std::meta::members_of(^^T, context);
-
         std::vector<Property_Pair> pairs;
 
         for (std::meta::info m1 : members)
         {
-            if (!std::meta::is_function(m1) || !std::meta::has_identifier(m1))
+            if (!std::meta::is_function(m1) || !std::meta::has_identifier(m1) )
             {
                 continue;
             }
 
             std::string_view getter_name = std::meta::identifier_of(m1);
-            if (!getter_name.starts_with("Get_"))
+            if (!getter_name.starts_with("Get_") )
             {
                 continue;
             }
 
             std::string_view base_name = getter_name.substr(4);
-
             for (std::meta::info m2 : members)
             {
-                if (!std::meta::is_function(m2) || !std::meta::has_identifier(m2))
+                if (!std::meta::is_function(m2) || !std::meta::has_identifier(m2) )
                 {
                     continue;
                 }
@@ -194,23 +179,21 @@ namespace GDExtension_Reflect
                 std::string_view setter_name = std::meta::identifier_of(m2);
                 if (setter_name.starts_with("Set_") && setter_name.substr(4) == base_name)
                 {
-                    pairs.push_back(Property_Pair{ .getter = m1, .setter = m2 });
+                    pairs.push_back(Property_Pair{ .getter = m1, .setter = m2 } );
+
                     break;
                 }
             }
         }
-
         return pairs;
     }
 
-    template <typename T>
-    consteval std::size_t Get_Property_Count()
+    template <typename T> consteval std::size_t Get_Property_Count()
     {
         return Collect_Property_Pairs<T>().size();
     }
 
-    template <typename T>
-    consteval auto Get_Properties_Array()
+    template <typename T> consteval auto Get_Properties_Array()
     {
         constexpr std::size_t count = Get_Property_Count<T>();
         std::array<Property_Pair, count> array{};
@@ -220,39 +203,35 @@ namespace GDExtension_Reflect
         {
             array[i] = vector[i];
         }
-
         return array;
     }
 
-    template <std::meta::info Getter>
-    consteval auto Format_Property_Name()
+    template <std::meta::info Getter> consteval auto Format_Property_Name()
     {
         constexpr std::string_view getter_name = std::meta::identifier_of(Getter);
         std::array<char, 64> buffer{};
-
-        // Strip "Get_"
-        std::string_view base = getter_name.substr(4);
+        std::string_view base = getter_name.substr(4);  // Strip "Get_"
 
         for (std::size_t i = 0; i < base.size() && i < 63; ++i)
         {
             char c = base[i];
+
             if (i == 0 && c >= 'A' && c <= 'Z')
             {
-                c = static_cast<char>(c + ('a' - 'A'));
+                c = static_cast<char>(c + ('a' - 'A') );
             }
+
             buffer[i] = c;
         }
-
         return buffer;
     }
 
-    template <std::meta::info Getter, std::meta::info Setter>
-    void Bind_Single_Property()
+    template <std::meta::info Getter, std::meta::info Setter> void Bind_Single_Property()
     {
-        using Getter_Ptr_Type = decltype(&[: Getter :]);
-        using Traits = Getter_Traits<Getter_Ptr_Type>;
-        using Property_Type = typename Traits::Return_Type;
-        using Class_Type = typename Traits::Class;
+        using getter_ptr_type = decltype(&[: Getter :]);
+        using traits = Getter_Traits<getter_ptr_type>;
+        using property_type = typename traits::Return_Type;
+        using class_type = typename traits::Class;
 
         constexpr auto getter_ptr = &[: Getter :];
         constexpr auto setter_ptr = &[: Setter :];
@@ -261,20 +240,19 @@ namespace GDExtension_Reflect
         constexpr std::string_view setter_name = std::meta::identifier_of(Setter);
         constexpr auto property_name_buffer = Format_Property_Name<Getter>();
 
-        godot::ClassDB::bind_method(godot::D_METHOD(getter_name.data()), getter_ptr);
-        godot::ClassDB::bind_method(godot::D_METHOD(setter_name.data(), property_name_buffer.data()), setter_ptr);
+        godot::ClassDB::bind_method(godot::D_METHOD(getter_name.data() ), getter_ptr);
+        godot::ClassDB::bind_method(godot::D_METHOD(setter_name.data(), property_name_buffer.data() ), setter_ptr);
 
-        constexpr godot::Variant::Type variant_type = Deduce_Variant_Type<Property_Type>();
+        constexpr godot::Variant::Type variant_type = Deduce_Variant_Type<property_type>();
         godot::ClassDB::add_property(
-            Class_Type::get_class_static(),
-            godot::PropertyInfo(variant_type, property_name_buffer.data()),
+            class_type::get_class_static(),
+            godot::PropertyInfo(variant_type, property_name_buffer.data() ),
             setter_name.data(),
             getter_name.data()
         );
     }
 
-    template <typename T, std::size_t... Is>
-    void Bind_Properties_Impl(std::index_sequence<Is...>)
+    template <typename T, std::size_t... Is> void Bind_Properties_Impl(std::index_sequence<Is...>)
     {
         constexpr auto properties = Get_Properties_Array<T>();
         (Bind_Single_Property<properties[Is].getter, properties[Is].setter>(), ...);
@@ -290,67 +268,59 @@ namespace GDExtension_Reflect
 
         for (std::meta::info m : members)
         {
-            if (!std::meta::is_function(m) || !std::meta::has_identifier(m))
+            if (!std::meta::is_function(m) || !std::meta::has_identifier(m) )
             {
                 continue;
             }
 
             std::string_view name = std::meta::identifier_of(m);
-
-            if (name.starts_with("_") || name.starts_with("Get_") || name.starts_with("Set_"))
+            if (name.starts_with("_") || name.starts_with("Get_") || name.starts_with("Set_") )
             {
                 continue;
             }
 
-            if (Has_Annotation<Callable_Tag>(m))
+            if (Has_Annotation<Callable_Tag>(m) )
             {
                 methods.push_back(m);
             }
         }
-
         return methods;
     }
 
-    template <typename T>
-    consteval std::size_t Get_Exposed_Method_Count()
+    template <typename T> consteval std::size_t Get_Exposed_Method_Count()
     {
         return Collect_Exposed_Methods<T>().size();
     }
 
-    template <typename T>
-    consteval auto Get_Exposed_Methods_Array()
+    template <typename T> consteval auto Get_Exposed_Methods_Array()
     {
         constexpr std::size_t count = Get_Exposed_Method_Count<T>();
-        std::array<std::meta::info, count> array{};
+        std::array<std::meta::info, count> array { };
         const auto vector = Collect_Exposed_Methods<T>();
 
         for (std::size_t i = 0; i < count; ++i)
         {
             array[i] = vector[i];
         }
-
         return array;
     }
 
-    template <std::meta::info Method>
-    void Bind_Single_Method()
+    template <std::meta::info Method> void Bind_Single_Method()
     {
         constexpr auto method_ptr = &[: Method :];
         constexpr std::string_view method_name = std::meta::identifier_of(Method);
 
-        godot::ClassDB::bind_method(godot::D_METHOD(method_name.data()), method_ptr);
+        godot::ClassDB::bind_method(godot::D_METHOD(method_name.data() ), method_ptr);
     }
 
-    template <typename T, std::size_t... Is>
-    void Bind_Methods_Impl(std::index_sequence<Is...>)
+    template <typename T, std::size_t... Is> void Bind_Methods_Impl(std::index_sequence<Is...>)
     {
         constexpr auto methods = Get_Exposed_Methods_Array<T>();
+
         (Bind_Single_Method<methods[Is]>(), ...);
     }
 
-    // Converts "On_Speed_Changed" -> "on_speed_changed"
-    template <std::meta::info Member>
-    consteval auto Format_Signal_Name()
+    template <std::meta::info Member> consteval auto Format_Signal_Name()  // Converts "On_Speed_Changed" -> "on_speed_changed"
     {
         constexpr std::string_view member_name = std::meta::identifier_of(Member);
         std::array<char, 64> buffer{};
@@ -358,23 +328,22 @@ namespace GDExtension_Reflect
         for (std::size_t i = 0; i < member_name.size() && i < 63; ++i)
         {
             char c = member_name[i];
+
             if (c >= 'A' && c <= 'Z')
             {
-                c = static_cast<char>(c + ('a' - 'A'));
+                c = static_cast<char>(c + ('a' - 'A') );
             }
+
             buffer[i] = c;
         }
-
         return buffer;
     }
 
-    template <typename T>
-    struct Delegate_Binder;
+    template <typename T> struct Delegate_Binder;
 
-    template <typename... Args>
-    struct Delegate_Binder<Delegate<Args...>>
+    template <typename... Args> struct Delegate_Binder<Delegate<Args...>>
     {
-        static void Bind(const char* signal_name, const godot::StringName& class_name)
+        static void Bind(const char *signal_name, const godot::StringName &class_name)
         {
             godot::MethodInfo signal_info(signal_name);
             std::size_t arg_index = 0;
@@ -383,48 +352,42 @@ namespace GDExtension_Reflect
             {
                 constexpr godot::Variant::Type var_type = Deduce_Variant_Type<Args>();
                 const std::string arg_name = "arg" + std::to_string(arg_index++);
-                signal_info.arguments.push_back(godot::PropertyInfo(var_type, arg_name.c_str()));
-            }(), ...);
 
+                signal_info.arguments.push_back(godot::PropertyInfo(var_type, arg_name.c_str() ) );
+            }(), ...);
             godot::ClassDB::add_signal(class_name, signal_info);
         }
     };
 
-    template <typename T>
-    consteval auto Collect_Delegates()
+    template <typename T> consteval auto Collect_Delegates()
     {
         constexpr auto context = std::meta::access_context::current();
         const auto fields = std::meta::nonstatic_data_members_of(^^T, context);
-
         std::vector<std::meta::info> delegates;
 
         for (std::meta::info field : fields)
         {
-            if (!std::meta::has_identifier(field))
+            if (!std::meta::has_identifier(field) )
             {
                 continue;
             }
 
             std::string_view name = std::meta::identifier_of(field);
-            if (name.starts_with("_"))
+            if (name.starts_with("_") )
             {
                 continue;
             }
-
             delegates.push_back(field);
         }
-
         return delegates;
     }
 
-    template <typename T>
-    consteval std::size_t Get_Delegate_Count()
+    template <typename T> consteval std::size_t Get_Delegate_Count()
     {
         return Collect_Delegates<T>().size();
     }
 
-    template <typename T>
-    consteval auto Get_Delegates_Array()
+    template <typename T> consteval auto Get_Delegates_Array()
     {
         constexpr std::size_t count = Get_Delegate_Count<T>();
         std::array<std::meta::info, count> array{};
@@ -434,51 +397,45 @@ namespace GDExtension_Reflect
         {
             array[i] = vector[i];
         }
-
         return array;
     }
 
-    template <typename ClassT, std::meta::info Member>
-    void Bind_Single_Delegate()
+    template <typename ClassT, std::meta::info Member> void Bind_Single_Delegate()
     {
         using Field_Type = [: std::meta::type_of(Member) :];
 
         if constexpr (Is_Delegate_V<Field_Type>)
         {
             constexpr auto signal_name_buffer = Format_Signal_Name<Member>();
-            Delegate_Binder<Field_Type>::Bind(signal_name_buffer.data(), ClassT::get_class_static());
+            Delegate_Binder<Field_Type>::Bind(signal_name_buffer.data(), ClassT::get_class_static() );
         }
     }
 
-    template <typename T, std::size_t... Is>
-    void Bind_Delegates_Impl(std::index_sequence<Is...>)
+    template <typename T, std::size_t... Is> void Bind_Delegates_Impl(std::index_sequence<Is...>)
     {
         constexpr auto delegates = Get_Delegates_Array<T>();
+
         (Bind_Single_Delegate<T, delegates[Is]>(), ...);
     }
 
-    template <typename T>
-    void Auto_Bind_Class()
+    template <typename T> void Auto_Bind_Class()
     {
-        // 1. Auto-bind properties (Get_*/Set_* pairs)
         constexpr std::size_t property_count = Get_Property_Count<T>();
-        if constexpr (property_count > 0)
+        if constexpr (property_count > 0)  // Auto-bind properties (Get_*/Set_ *pairs)
         {
-            Bind_Properties_Impl<T>(std::make_index_sequence<property_count>{});
+            Bind_Properties_Impl<T>(std::make_index_sequence<property_count> { } );
         }
 
-        // 2. Auto-bind [[=Callable]] methods
         constexpr std::size_t method_count = Get_Exposed_Method_Count<T>();
-        if constexpr (method_count > 0)
+        if constexpr (method_count > 0)  // Auto-bind [[=Callable]] methods
         {
-            Bind_Methods_Impl<T>(std::make_index_sequence<method_count>{});
+            Bind_Methods_Impl<T>(std::make_index_sequence<method_count> { } );
         }
 
-        // 3. Auto-bind Delegate<Args...> signals
         constexpr std::size_t delegate_count = Get_Delegate_Count<T>();
-        if constexpr (delegate_count > 0)
+        if constexpr (delegate_count > 0)  // Auto-bind Delegate<Args...> signals
         {
-            Bind_Delegates_Impl<T>(std::make_index_sequence<delegate_count>{});
+            Bind_Delegates_Impl<T>(std::make_index_sequence<delegate_count> { } );
         }
     }
 }
@@ -487,8 +444,7 @@ namespace GDExtension_Reflect
 //------------------------------------------------------------------------------------------------------------
 namespace GDExtension_Reflect
 {
-    template <typename T>
-    void Auto_Bind_Class()
+    template <typename T> void Auto_Bind_Class()
     {
 
     }
