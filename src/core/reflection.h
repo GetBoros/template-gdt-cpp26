@@ -123,6 +123,10 @@ namespace GDExtension_Reflect
         {
             return godot::Variant::OBJECT;
         }
+        else if constexpr (std::is_enum_v<Decayed>)
+        {
+            return godot::Variant::INT;
+        }
         else
         {
             return godot::Variant::NIL;
@@ -210,20 +214,79 @@ namespace GDExtension_Reflect
     {
         constexpr std::string_view getter_name = std::meta::identifier_of(Getter);
         std::array<char, 64> buffer{};
-        std::string_view base = getter_name.substr(4);  // Strip "Get_"
+        std::string_view base = getter_name.substr(4);  // Strips "Get_" and preserves casing (e.g. "Speed", "Is_Enabled")
 
         for (std::size_t i = 0; i < base.size() && i < 63; ++i)
         {
-            char c = base[i];
-
-            if (i == 0 && c >= 'A' && c <= 'Z')
-            {
-                c = static_cast<char>(c + ('a' - 'A') );
-            }
-
-            buffer[i] = c;
+            buffer[i] = base[i];
         }
         return buffer;
+    }
+
+    template <typename EnumT> consteval auto Build_Enum_Hint_String()
+    {// C++26 P2996: Builds comma-separated string for Godot Inspector dropdown at compile time!
+
+        std::array<char, 256> buffer { };
+        std::size_t offset = 0;
+
+        const auto enumerators = std::meta::enumerators_of(^^EnumT); 
+
+        for (std::size_t i = 0; i < enumerators.size(); ++i)
+        {
+            std::string_view name = std::meta::identifier_of(enumerators[i]);
+
+            for (char c : name)
+            {
+                if (offset < 255)
+                {
+                    buffer[offset++] = c;
+                }
+            }
+
+            if (i + 1 < enumerators.size() && offset < 255)  // Comma separator between enum elements
+            {
+                buffer[offset++] = ',';
+            }
+        }
+        return buffer;
+    }
+
+    template <typename EnumT> consteval std::size_t Get_Enumerator_Count()
+    {
+        return std::meta::enumerators_of(^^EnumT).size();
+    }
+
+    template <typename EnumT> consteval auto Get_Enumerators_Array()
+    {
+        constexpr std::size_t count = Get_Enumerator_Count<EnumT>();
+        std::array<std::meta::info, count> array{};
+        const auto vector = std::meta::enumerators_of(^^EnumT);
+
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            array[i] = vector[i];
+        }
+        return array;
+    }
+
+    template <typename ClassT, typename EnumT, std::size_t... Is> void Bind_Enum_Constants_Impl(std::index_sequence<Is...>)
+    {
+        constexpr auto enumerators = Get_Enumerators_Array<EnumT>();
+        constexpr std::string_view enum_name = std::meta::identifier_of(^^EnumT);
+
+        ([&]()
+        {
+            constexpr auto e = enumerators[Is];
+            constexpr std::string_view constant_name = std::meta::identifier_of(e);
+            constexpr int64_t constant_value = static_cast<int64_t>([: e :]);
+
+            godot::ClassDB::bind_integer_constant(
+                ClassT::get_class_static(),
+                enum_name.data(),
+                constant_name.data(),
+                constant_value
+            );
+        }(), ...);
     }
 
     template <std::meta::info Getter, std::meta::info Setter> void Bind_Single_Property()
@@ -244,12 +307,31 @@ namespace GDExtension_Reflect
         godot::ClassDB::bind_method(godot::D_METHOD(setter_name.data(), property_name_buffer.data() ), setter_ptr);
 
         constexpr godot::Variant::Type variant_type = Deduce_Variant_Type<property_type>();
-        godot::ClassDB::add_property(
-            class_type::get_class_static(),
-            godot::PropertyInfo(variant_type, property_name_buffer.data() ),
-            setter_name.data(),
-            getter_name.data()
-        );
+        if constexpr (std::is_enum_v<property_type>)
+        {
+            constexpr auto hint_string_buffer = Build_Enum_Hint_String<property_type>();
+
+            godot::ClassDB::add_property(
+                class_type::get_class_static(),
+                godot::PropertyInfo(
+                    variant_type,
+                    property_name_buffer.data(),
+                    godot::PROPERTY_HINT_ENUM,
+                    hint_string_buffer.data()
+                ),
+                setter_name.data(),
+                getter_name.data()
+            );
+        }
+        else
+        {
+            godot::ClassDB::add_property(
+                class_type::get_class_static(),
+                godot::PropertyInfo(variant_type, property_name_buffer.data()),
+                setter_name.data(),
+                getter_name.data()
+            );
+        }
     }
 
     template <typename T, std::size_t... Is> void Bind_Properties_Impl(std::index_sequence<Is...>)
