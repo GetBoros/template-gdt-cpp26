@@ -12,13 +12,13 @@ enum ERotation_Direction
 //------------------------------------------------------------------------------------------------------------
 VARIANT_ENUM_CAST(ERotation_Direction);
 //------------------------------------------------------------------------------------------------------------
-class Rotator2D : public godot::Node2D
+class ARotator2D : public godot::Node2D
 {
-    GDCLASS_REFLECT(Rotator2D, godot::Node2D);
+    GDCLASS_REFLECT(ARotator2D, godot::Node2D);
 
 public:
-    ~Rotator2D() override = default;
-    Rotator2D() = default;
+    ~ARotator2D() override = default;
+    ARotator2D() = default;
 
     virtual void _ready() override;
     virtual void _process(double delta) override;

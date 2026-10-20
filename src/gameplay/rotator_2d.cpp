@@ -8,13 +8,13 @@
 
 
 
-// Rotator2D
-void Rotator2D::_ready()
+// ARotator2D
+void ARotator2D::_ready()
 {
-    godot::UtilityFunctions::print("Rotator2D initialized from C++!");
+    godot::UtilityFunctions::print("ARotator2D initialized from C++!");
 }
 //------------------------------------------------------------------------------------------------------------
-void Rotator2D::_process(double delta)
+void ARotator2D::_process(double delta)
 {
     if (!Is_Enabled)
         return;
@@ -25,40 +25,40 @@ void Rotator2D::_process(double delta)
     set_rotation(current_rotation + sign * Speed * static_cast<float>(delta) );
 }
 //------------------------------------------------------------------------------------------------------------
-void Rotator2D::Set_Is_Enabled(bool value)
+void ARotator2D::Set_Is_Enabled(bool value)
 {
     Is_Enabled = value;
 }
 //------------------------------------------------------------------------------------------------------------
-void Rotator2D::Set_Speed(float speed)
+void ARotator2D::Set_Speed(float speed)
 {
     Speed = speed;
 
     On_Speed_Changed.Broadcast(this, Speed);
 }
 //------------------------------------------------------------------------------------------------------------
-void Rotator2D::Set_Direction(ERotation_Direction direction)
+void ARotator2D::Set_Direction(ERotation_Direction direction)
 {
     Rotation_Direction = direction;
 }
 //------------------------------------------------------------------------------------------------------------
-ERotation_Direction Rotator2D::Get_Direction() const
+ERotation_Direction ARotator2D::Get_Direction() const
 {
     return Rotation_Direction;
 }
 //------------------------------------------------------------------------------------------------------------
-bool Rotator2D::Get_Is_Enabled() const
+bool ARotator2D::Get_Is_Enabled() const
 {
     return Is_Enabled;
 }
 //------------------------------------------------------------------------------------------------------------
 
-float Rotator2D::Get_Speed() const
+float ARotator2D::Get_Speed() const
 {
     return Speed;
 }
 //------------------------------------------------------------------------------------------------------------
-void Rotator2D::Reset_Speed()
+void ARotator2D::Reset_Speed()
 {
     Speed = 2.0f;
     

@@ -16,7 +16,7 @@ void Initialize_Module(godot::ModuleInitializationLevel level)
     if (level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
         return;
 
-    godot::ClassDB::register_class<Rotator2D>();
+    godot::ClassDB::register_class<ARotator2D>();
 
 }
 //------------------------------------------------------------------------------------------------------------
