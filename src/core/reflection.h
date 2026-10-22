@@ -6,7 +6,7 @@
 //------------------------------------------------------------------------------------------------------------
 struct Callable_Tag  // C++26 P3394 Reflection Annotation Tag
 {
-
+    
 };
 //------------------------------------------------------------------------------------------------------------
 inline constexpr Callable_Tag Callable { };
@@ -50,7 +50,12 @@ private:
 // Generates both variable name and string literal automatically:
 #define DECLARE_DELEGATE(name, ...) \
     Delegate<__VA_ARGS__> name{#name}
-
+//------------------------------------------------------------------------------------------------------------
+#if !defined(__clang__)
+    #define GD_CALLABLE [[=Callable]]  // GCC 16 (Linux Desktop) - Native C++26 P3394 attribute
+#else
+    #define GD_CALLABLE  // Clang / Emscripten (WebAssembly) - Fallback
+#endif
 //------------------------------------------------------------------------------------------------------------
 #if !defined(__clang__)  // Fallback interface for IDE language server (Clangd) to eliminate parser errors
 //------------------------------------------------------------------------------------------------------------
@@ -133,19 +138,41 @@ namespace GDExtension_Reflect
         }
     }
 
-    template <typename T> struct Getter_Traits;
-
-    template <typename ClassT, typename ReturnT> struct Getter_Traits<ReturnT (ClassT::*)() const>
+    template <typename T>
+    struct Getter_Traits;
+    
+    // 1. Const getter
+    template <typename Class_Type, typename Prop_Type>
+    struct Getter_Traits<Prop_Type (Class_Type::*)() const>
     {
-        using Class = ClassT;
-        using Return_Type = ReturnT;
+        using Return_Type = Prop_Type;
+        using Class = Class_Type;
+    };
+    
+    // 2. Const getter (noexcept)
+    template <typename Class_Type, typename Prop_Type>
+    struct Getter_Traits<Prop_Type (Class_Type::*)() const noexcept>
+    {
+        using Return_Type = Prop_Type;
+        using Class = Class_Type;
+    };
+    
+    // 3. Non-const getter
+    template <typename Class_Type, typename Prop_Type>
+    struct Getter_Traits<Prop_Type (Class_Type::*)()>
+    {
+        using Return_Type = Prop_Type;
+        using Class = Class_Type;
+    };
+    
+    // 4. Non-const getter (noexcept)
+    template <typename Class_Type, typename Prop_Type>
+    struct Getter_Traits<Prop_Type (Class_Type::*)() noexcept>
+    {
+        using Return_Type = Prop_Type;
+        using Class = Class_Type;
     };
 
-    template <typename ClassT, typename ReturnT> struct Getter_Traits<ReturnT (ClassT::*)()>
-    {
-        using Class = ClassT;
-        using Return_Type = ReturnT;
-    };
 
     struct Property_Pair
     {

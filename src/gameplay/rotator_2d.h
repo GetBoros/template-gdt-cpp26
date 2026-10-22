@@ -31,7 +31,7 @@ public:
     bool Get_Is_Enabled() const;
     float Get_Speed() const;
 
-    [[=Callable]] void Reset_Speed();
+    GD_CALLABLE void Reset_Speed();
     
     Delegate<float> On_Speed_Changed {"on_speed_changed"};
 

@@ -2,16 +2,39 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build GDExtension (scons)",
+            "label": "Build GDExtension (Linux Desktop)",
             "type": "shell",
-            "command": "scons",
-            "args": [
-                "-j5"
-            ],
+            "command": "scons -j5",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": "$gcc",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build GDExtension (Web Release)",
+            "type": "shell",
+            "command": "source ~/emsdk/emsdk_env.sh && scons platform=web target=template_release -j5",
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build GDExtension (Web Debug)",
+            "type": "shell",
+            "command": "source ~/emsdk/emsdk_env.sh && scons platform=web target=template_debug -j5",
+            "group": "build",
             "problemMatcher": "$gcc",
             "presentation": {
                 "echo": true,
