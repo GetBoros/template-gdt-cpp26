@@ -31,4 +31,11 @@ mono_crash.*.json
 *.a
 bin/*.so
 
+# Игнорируем всё скомпилированное в папке bin/
+bin/*
+
+# Но сохраняем конфигурацию GDExtension!
+!bin/*.gdextension
+!bin/*.gdextension.uid
+
 build/
