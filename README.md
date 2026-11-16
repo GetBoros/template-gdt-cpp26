@@ -161,3 +161,8 @@ viewport/transparent_background=true
 5. Update your work folder in .clangd.
 
 
+cd ~/Work/template-gd-cpp26
+rm -f build/web/serve.py
+touch tools/.gdignore
+chmod +x tools/web/serve.py
+./tools/web/serve.py

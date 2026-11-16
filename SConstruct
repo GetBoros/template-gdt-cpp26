@@ -19,6 +19,13 @@ if is_web:
     # Web target: use Emscripten (em++ is automatically provided by godot-cpp)
     # Clang supports GNU C++26 standard
     game_env.Append(CXXFLAGS=["-std=gnu++26"])
+
+    # Modernize threading: remove deprecated -sUSE_PTHREADS and enforce standard -pthread
+    game_env["LINKFLAGS"] = [flag for flag in game_env["LINKFLAGS"] if "USE_PTHREADS" not in str(flag)]
+    if "-pthread" not in game_env["LINKFLAGS"]:
+        game_env.Append(LINKFLAGS=["-pthread"])
+    if "-pthread" not in game_env["CXXFLAGS"]:
+        game_env.Append(CXXFLAGS=["-pthread"])
 else:
     # Linux Desktop target: enforce local GCC 16 with P2996 Static Reflection
     game_env.Replace(CXX="g++-16")
