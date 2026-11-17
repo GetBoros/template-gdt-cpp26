@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------------------------------------
 #include <core/register_types.h>
-#include <gameplay/rotator_2d.h>
+#include <components/Rotator2D_Component.h>
+#include <components/Timer_Component.h>
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -16,7 +17,8 @@ void Initialize_Module(godot::ModuleInitializationLevel level)
     if (level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
         return;
 
-    godot::ClassDB::register_class<ARotator2D>();
+    godot::ClassDB::register_class<ATimer_Component>();
+    godot::ClassDB::register_class<ARotator2D_Component>();
 
 }
 //------------------------------------------------------------------------------------------------------------
